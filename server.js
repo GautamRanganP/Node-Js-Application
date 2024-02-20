@@ -9,45 +9,16 @@ const moment = require('moment');
 const app = express();
 const port = 3000;
 app.use(bodyParser.json());
-// Set up view engine
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
-
 const storage = multer.memoryStorage()
 const upload = multer({ storage: storage })
-// Set up multer for file upload
-// const upload = multer({ dest: "uploads/" });
-
-// Serve static files
 app.use(express.static(path.join(__dirname, "public")));
-// Import the necessary modules
-
-
-
-// Endpoint for home page
 app.get("/", (req, res) => {
   res.render("index");
 });
 
-// Endpoint for file upload
-app.post("/upload", upload.single("file"), (req, res) => {
-  const file = req.file;
-  if (!file) {
-    return res.status(400).send("No file uploaded.");
-  }
 
-  try {
-    const workbook = xlsx.readFile(file.path);
-    const sheetName = workbook.SheetNames[0]; // Assuming there's only one sheet
-    const sheet = workbook.Sheets[sheetName];
-    const data = xlsx.utils.sheet_to_json(sheet);
-    res.render("result", { data });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error reading Excel file.");
-  }
-});
-// app.post('/vlookup', upload.array('files', 1), (req, res) => {
 app.post(
   "/vlookup",
   upload.fields([
@@ -71,7 +42,6 @@ app.post(
         DateCount:files1.length
       };
       files1.map((file) => {
-        console.log("file",file)
         const originalFileName = file.originalname;
         const pattern =
           /^(.*) - Attendance report (\d{1,2}-\d{1,2}-\d{2})\.csv$/;
@@ -104,8 +74,6 @@ app.post(
         })
 
           TrainingDetails.DateList.push({date:match[2],data:filteredParticipants});
-          console.log("participants filter",filteredParticipants.length)
-          console.log("participants",participantAttendedObject.length)
         } else {
           console.log("No match found.");
         }
@@ -149,12 +117,9 @@ app.post(
   }
 );
 
-// function readExcel(filePath) {
-  
  function readExcel(buffer){
   const bufferData = Buffer.from(buffer);
   const workbook = xlsx.read(bufferData, { type: 'buffer' });
-  // const workbook = xlsx.readFile(filePath);
   const sheetName = workbook.SheetNames[0]; 
   const sheet = workbook.Sheets[sheetName];
   return xlsx.utils.sheet_to_json(sheet);
