@@ -1,11 +1,10 @@
 const express = require("express");
 const multer = require("multer");
-const xlsx = require("xlsx");
 const path = require("path");
 const ExcelJS = require('exceljs');
 const bodyParser = require('body-parser');
 const moment = require('moment');
-
+const { readExcel, extractDataFromNomination , extractFromTeamsAttendance } = require('./utils/excel')
 const app = express();
 const port = 3000;
 app.use(bodyParser.json());
@@ -14,6 +13,9 @@ app.set("views", path.join(__dirname, "views"));
 const storage = multer.memoryStorage()
 const upload = multer({ storage: storage })
 app.use(express.static(path.join(__dirname, "public")));
+
+
+
 app.get("/", (req, res) => {
   res.render("index");
 });
@@ -51,7 +53,7 @@ app.post(
             TrainingDetails.Name = match[1];
           }
           const DateAttendanceObject = readExcel(file.buffer);
-          const participantAttendedObject = extractParticipants(DateAttendanceObject)
+          const participantAttendedObject = extractFromTeamsAttendance(DateAttendanceObject)
 
           const filteredParticipants = participantAttendedObject.filter(participant => {
             const durationStr = participant['In-Meeting Duration'];
@@ -83,9 +85,8 @@ app.post(
         const dateB = new Date(b.date);
         return dateA - dateB;
       });
-      // console.log("Training Name:", TrainingDetails);
       const data2 = readExcel(files2[0].buffer);
-      const employees = extractFromNominations(data2 , files1.length);
+      const employees = extractDataFromNomination(data2 , files1.length);
       TrainingDetails.DateList.forEach(dateEntry => {
         const currentDate = dateEntry.date;
         const dateData = dateEntry.data;
@@ -116,56 +117,6 @@ app.post(
     }
   }
 );
-
- function readExcel(buffer){
-  const bufferData = Buffer.from(buffer);
-  const workbook = xlsx.read(bufferData, { type: 'buffer' });
-  const sheetName = workbook.SheetNames[0]; 
-  const sheet = workbook.Sheets[sheetName];
-  return xlsx.utils.sheet_to_json(sheet);
-}
-
-const extractFromNominations = (dataArray ,sessionCount) => {
-  const participants = [];
-  for (const item of dataArray) {
-    const participant = {
-      NEW_EMP_ID: item.NEW_EMP_ID,
-      NAME: item.NAME,
-      PRESENTCOUNT: 0,
-      SESSIONCOUNT:sessionCount
-    };
-    participants.push(participant);
-  }
-  return participants;
-};
-const extractParticipants = (dataArray) => {
-  const participants = [];
-  let isParticipantSection = false;
-  for (const item of dataArray) {
-    if (item["1. Summary"] === "Name") {
-      isParticipantSection = true;
-      continue;
-    }
-    if (
-      isParticipantSection &&
-      item["1. Summary"] !== "3. In-Meeting Activities"
-    ) {
-      const participant = {
-        Name: item["1. Summary"],
-        "First Join": item.__EMPTY,
-        "Last Leave": item.__EMPTY_1,
-        "In-Meeting Duration": item.__EMPTY_2,
-        Email: item.__EMPTY_3,
-        "Participant ID (UPN)": item.__EMPTY_4.replace("@hexaware.com", ""),
-        Role: item.__EMPTY_5,
-      };
-      participants.push(participant);
-    } else if (item["1. Summary"] === "3. In-Meeting Activities") {
-      break;
-    }
-  }
-  return participants;
-};
 
 
 app.post('/export-excel', (req, res) => {
