@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VLOOKUP Result</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+</head>
+<body>
+    <h1>VLOOKUP Result</h1>
+    <label for="durationFilter">Filter by In-Meeting Duration (less than 30 minutes):</label>
+    <button onclick="filterByDuration()">Apply Filter</button>
+    <button onclick="exportToExcel()">Export to Excel</button>
+    <table id="resultTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Participant ID (UPN)</th>
+                <th>In-Meeting Duration</th>
+            </tr>
+        </thead>
+        <tbody id="resultBody">
+            <% result.forEach(employee => { %>
+                <tr>
+                    <td><%= employee.Name %></td>
+                    <td><%= employee.Email %></td>
+                    <td><%= employee['Participant ID (UPN)'] %></td>
+                    <td><%= employee['In-Meeting Duration'] %></td>
+                </tr>
+            <% }); %>
+        </tbody>
+    </table>
+
+    <script>
+        function filterByDuration() {
+            const rows = document.getElementById('resultBody').getElementsByTagName('tr');
+            
+            for (let i = 0; i < rows.length; i++) {
+                const durationCell = rows[i].getElementsByTagName('td')[3]; // Index 3 for the "In-Meeting Duration" column
+                if (durationCell) {
+                    const durationText = durationCell.innerText;
+                    const durationParts = durationText.split(' ');
+                    if (durationParts.length === 3) { // Ensure the duration is in the correct format (e.g., "1h 30m")
+                        const hours = parseInt(durationParts[0]);
+                        const minutes = parseInt(durationParts[2]);
+                        const totalMinutes = hours * 60 + minutes;
+                        if (totalMinutes < 30) {
+                            rows[i].style.display = ''; // Show rows with duration less than 30 minutes
+                        } else {
+                            rows[i].style.display = 'none'; // Hide rows with duration greater than or equal to 30 minutes
+                        }
+                    }
+                }
+            }
+        }
+
+        function exportToExcel() {
+            const wb = XLSX.utils.table_to_book(document.getElementById('resultTable'), {sheet: "Sheet JS"});
+            XLSX.writeFile(wb, 'filtered_results.xlsx');
+        }
+    </script>
+</body>
+</html>

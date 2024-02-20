@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTS Attendance Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f8f8;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #fff;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        th, td {
+            transition: all 0.3s;
+        }
+
+        th:hover {
+            background-color: #ddd;
+        }
+
+        td:hover {
+            background-color: #f9f9f9;
+        }
+
+        button {
+            display: flex;
+            padding: 10px 20px;
+            margin: 10px;
+            justify-content: flex-end;
+            background-color: #4caf50;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+        .header-tracker{
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        .count-tracker{
+            align-self: flex-end;
+        }
+        h3{
+            text-align: center;
+            flex: 1;
+        }
+        .date-summary-container {
+            width: 550px;
+            height: 25px;
+            margin: 0 20px;
+            border: 1px solid black;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+.summary-box {
+    display: inline-flex;
+    padding: 5px 10px;
+    border-radius: 5px;
+    margin-left: 10px;
+    flex: 1;
+}
+.absent-value{
+    margin-left: 20px;
+}
+
+.summary-label {
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+.summary-value {
+    font-weight: bold;
+    color: #007bff; /* Change color as desired */
+}
+.summary-header{
+    flex: 1;
+    text-align: center;
+}
+
+
+    </style>
+</head>
+<body>
+    <h1>GTS Attendance Tracker</h1>
+    <div class="header-tracker">
+        <h3>Training Name: <%= trainingName %></h3>
+        <h3 class="count-tracker">Participants Count : <span id="count-employee"></span></h3>
+    </div>
+    <% for (let i = 0; i < dates.length; i++) { %>
+        <% 
+        const date = new Date(dates[i].date);
+        const formattedDate = formatDate(date);
+    %>
+        <div class="date-summary-container">
+            <label class="summary-header"><%= formattedDate %></label>
+            <div class="summary-box">
+                <p class="summary-label">Present:</p>
+                <p id="count-presence<%= i %>" class="summary-value"></p>
+                <p class="summary-label absent-value">Absent:</p>
+                <p id="count-absent<%= i %>" class="summary-value"></p>
+            </div>
+        </div>
+    <% } %>
+    
+    <div class="header-tracker">
+        <button id="export-btn">Export to Excel</button>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Emp Id</th>
+                <th>Name</th>
+                <% for (let i = 0; i < dates.length; i++) { %>
+                    <% 
+                    const date = new Date(dates[i].date);
+                    const formattedDate = formatDate(date);
+                %>
+                    <th id="date_<%= i %>"><%= formattedDate %></th>
+                <% } %>
+                <th>No of Sessions</th>
+                <th>No of Days Present</th>
+                <th>Attendance in %</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% for (let employee of employees) { %>
+                <tr>
+                    <td><%= employee.NEW_EMP_ID %></td>
+                    <td class="employee-name"><%= employee.NAME %></td>
+                    <% for (let i = 0; i < dates.length; i++) { %>
+                        <td class="datevalue_<%= i %>"><%= employee.Attendance[dates[i].date] %></td>
+                    <% } %>
+                    <!-- <% for (let date of dates) { %>
+                        <td><%= employee.Attendance[date.date] %></td>
+                    <% } %> -->
+                    <td><%= employee.SESSIONCOUNT %></td>
+                    <td><%= employee.PRESENTCOUNT %></td>
+                    <td><%= ((employee.PRESENTCOUNT / employee.SESSIONCOUNT) * 100).toFixed(0) %>%</td>
+                </tr>
+            <% } %>
+        </tbody>
+    </table>
+    <% function formatDate(date) { %>
+        <% 
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const day = date.getDate();
+            const month = months[date.getMonth()];
+            const year = date.getFullYear().toString().slice(-2); // Get last 2 digits of year
+            return `${day}-${month}-${year}`;
+        %>
+    <% } %>
+    <!-- JavaScript to handle export action -->
+    <script>
+        // document.querySelectorAll('.employee-name').addEventListener('DOMContentLoaded', function(value) {
+        //     console.log('date clicked',value)
+        // })
+        window.onload=((event)=>{
+            let employee = document.querySelectorAll('.employee-name')
+            let employeeElement = document.getElementById('count-employee')
+            let datesData = JSON.parse(`<%-JSON.stringify(dates)%>`) 
+            employeeElement.innerText = employee.length
+            let datesCount = [];
+            for (let i = 0; i < datesData.length; i++) {
+                let dateCount = document.querySelectorAll(`.datevalue_${i}`)
+                let AbsentCount = 0;
+                let PresentCount = 0;
+                dateCount.forEach((tableData,index)=>{
+                    if(tableData.textContent === 'P')
+                        PresentCount++
+                    else
+                        AbsentCount++
+
+                    datesCount.push({
+                            Date: datesData[i],
+                            'PresentCount': PresentCount,
+                            'AbsentCount': AbsentCount  
+                        })
+                })
+                document.getElementById(`count-presence${i}`).innerText =PresentCount
+                document.getElementById(`count-absent${i}`).innerText =AbsentCount
+
+            }
+
+        })
+        document.getElementById('date_0').addEventListener('click', function() {
+            let data = JSON.parse('<%-JSON.stringify(employees)%>') 
+            console.log('date clicked')
+        })
+        document.getElementById('export-btn').addEventListener('click', function() {
+            let data = JSON.parse('<%-JSON.stringify(employees)%>') 
+            let datesData = JSON.parse('<%-JSON.stringify(dates)%>') 
+            let trainingName = JSON.parse(`<%-JSON.stringify(trainingName)%>`) 
+            fetch('/export-excel', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    employees:data,
+                    dates:datesData
+                })
+            })
+            .then(response => {
+                if (response.ok) {
+                    response.blob().then(blob => {
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${trainingName} Attendance Report.xlsx`; // Set the filename
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    });
+                } else {
+                    // Handle error if export fails
+                    console.error('Export failed:', response.statusText);
+                    alert('Export failed. Please try again later.');
+                }
+            })
+            .catch(error => {
+                // Handle network or other errors
+                console.error('Error exporting data:', error);
+                alert('An error occurred. Please try again later.');
+            });
+        });
+    </script>
+</body>
+</html>
